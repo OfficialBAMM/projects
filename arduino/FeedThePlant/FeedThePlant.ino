@@ -1,4 +1,4 @@
-boolean debug = false;
+boolean debug = true;
 
 //Physical pins
 int sensorPin      = A0; 
@@ -13,10 +13,12 @@ int moistureLevelThreshold = 350;
 
 int minutesToLoop  = 60;
 int timesToSplit   = minutesToLoop / 10;
+long delayTime;
 
-int secondsToPump          = 5;
-int secondsToPowerSensor   = 1;
+int secondsToPump        = 5;
+int secondsToPowerSensor = 10;
 
+//The time to wait in the for loop.
 long waitTime = 0;
 
 void setup() {
@@ -26,10 +28,10 @@ void setup() {
   pinMode(sensorPinPower, OUTPUT);
 
   //Wait to check
-  waitTime = minutesToLoop * oneMinute;
+  delayTime = (minutesToLoop / timesToSplit) * oneMinute;
   
-  if(debug){
-    waitTime = 1000;
+  if(debug == true){
+    delayTime = 1000;
     secondsToPump = 1;
   }
 }
@@ -37,7 +39,7 @@ void setup() {
 void loop() {
   int moistureLevel = getAverageMoistureLevel();
 
-  if(moistureLevel > moistureLevelThreshold)
+  if(moistureLevel < moistureLevelThreshold)
   {
     turnOnPump();
   }
@@ -46,32 +48,28 @@ void loop() {
 int getAverageMoistureLevel(){
   int average = 0;
   //Check every `timesToSplit` / `minutesToLoop` for data.
-  for (int i=0; i <= timesToSplit; i++){
+  for (int i=1; i <= timesToSplit; i++){
     average += getMoistureLevel();
 
-    int delayTime = minutesToLoop / timesToSplit;
-    delay(delayTime * oneMinute);
+    delay(delayTime);
   }
 
-  //Calculate average=
+  //Calculate average
   int tempAverage = (average / timesToSplit);
+  
+  sendDebugMessage(tempAverage, "Average");
+  
   return tempAverage;
 }
 
 int getMoistureLevel(){
+  //Power up pin
   turnOnSensorPin();
-  
+
+  //Get the data.
   int output_value = analogRead(sensorPin);
-  
-  if(debug == true){
-    int output_value_percentage = map(output_value,550,0,0,100);
-    
-    Serial.print("Mositure : ");
-    Serial.print(output_value);
-    Serial.print(" raw, ");
-    Serial.print(output_value_percentage);
-    Serial.println("%.");
-  }
+
+  sendDebugMessage(output_value, "Literal");
   
   turnOffSensorPin();
   
@@ -79,22 +77,22 @@ int getMoistureLevel(){
 }
 
 void turnOnPump(){
-  
   if(debug == true){
     Serial.println("PUMPINGG!!");
-  } else {
-    digitalWrite(pumpPin, HIGH);
+    return;
   }
-  
+
+  digitalWrite(pumpPin, HIGH);
+
   delay(secondsToPump * 1000);
   
   turnOffPump();
 }
 
 void turnOffPump(){
-  if(debug == false){
-    digitalWrite(pumpPin, LOW);
-  }
+  if(debug == true) return;
+  
+  digitalWrite(pumpPin, LOW);
 }
 
 void turnOnSensorPin(){
@@ -107,6 +105,17 @@ void turnOffSensorPin(){
   digitalWrite(sensorPinPower, LOW);
 }
 
+void sendDebugMessage(int output_value, String kind){
+  if(debug == true){
+    int output_value_percentage = map(output_value,550,0,0,100);
+    
+    Serial.print(kind + " mositure : ");
+    Serial.print(output_value);
+    Serial.print(" raw, ");
+    Serial.print(output_value_percentage);
+    Serial.println("%.");
+  }
+}
 
 //08 feb 16:10: Mositure : 259 raw, 52%.
 //09 feb 11:31: Mositure : 341 raw, 38%.
@@ -116,7 +125,3 @@ void turnOffSensorPin(){
 //13 feb 00:47: Mositure : 407 raw, 26%.
 //14 feb 00:38: Mositure : 424 raw, 22%. GAVE WATER
 //15 feb 16:47: Mositure : 359 raw, 34%.
-
-
-
-
