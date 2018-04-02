@@ -2,7 +2,6 @@ boolean debug = true;
 
 //Physical pins
 int sensorPin      = A0; 
-int sensorPinPower = A1;
 int pumpPin        = A5; 
 
 const long oneSecond = 1000;
@@ -16,7 +15,6 @@ int timesToSplit   = minutesToLoop / 10;
 long delayTime;
 
 int secondsToPump        = 5;
-int secondsToPowerSensor = 10;
 
 //The time to wait in the for loop.
 long waitTime = 0;
@@ -25,7 +23,6 @@ void setup() {
   Serial.begin(9600);
   pinMode(sensorPin, INPUT);
   pinMode(pumpPin, OUTPUT);
-  pinMode(sensorPinPower, OUTPUT);
 
   //Wait to check
   delayTime = (minutesToLoop / timesToSplit) * oneMinute;
@@ -63,15 +60,10 @@ int getAverageMoistureLevel(){
 }
 
 int getMoistureLevel(){
-  //Power up pin
-  turnOnSensorPin();
-
   //Get the data.
   int output_value = analogRead(sensorPin);
 
   sendDebugMessage(output_value, "Literal");
-  
-  turnOffSensorPin();
   
   return output_value;
 }
@@ -93,16 +85,6 @@ void turnOffPump(){
   if(debug == true) return;
   
   digitalWrite(pumpPin, LOW);
-}
-
-void turnOnSensorPin(){
-  digitalWrite(sensorPinPower, HIGH);
-  //The delay is because the program is faster than the sensor can handle.
-  delay(secondsToPowerSensor * oneSecond);
-}
-
-void turnOffSensorPin(){
-  digitalWrite(sensorPinPower, LOW);
 }
 
 void sendDebugMessage(int output_value, String kind){
